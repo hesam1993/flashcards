@@ -3,6 +3,10 @@ import CardForm from './components/CardForm';
 import CardsList from './components/CardsList';
 import ReviewCards from './components/ReviewCards';
 
+// Import both API services
+import * as apiService from './services/api';
+import * as mockService from './services/mockData';
+
 // Define the Card type
 export type Card = {
   id: string;
@@ -10,8 +14,10 @@ export type Card = {
   definition: string;
 };
 
-// Define API base URL
-const API_BASE_URL = 'http://localhost:5001/api';
+// Choose which service to use based on environment
+// Use mock service for GitHub Pages (production), API for development
+const isProduction = process.env.NODE_ENV === 'production';
+const service = isProduction ? mockService : apiService;
 
 const App: React.FC = () => {
   // States for the application
@@ -22,24 +28,19 @@ const App: React.FC = () => {
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
 
-  // Load cards from API when the app starts
+  // Display a message about the backend when in production
+  const [showBackendMessage, setShowBackendMessage] = useState<boolean>(isProduction);
+
+  // Load cards from the selected service when the app starts
   useEffect(() => {
     const fetchCards = async () => {
       setIsLoading(true);
       try {
-        const [allCardsRes, knownCardsRes, unknownCardsRes] = await Promise.all([
-          fetch(`${API_BASE_URL}/cards`),
-          fetch(`${API_BASE_URL}/cards/known`),
-          fetch(`${API_BASE_URL}/cards/unknown`)
+        const [allCards, known, unknown] = await Promise.all([
+          service.fetchCards(),
+          service.fetchKnownCards(),
+          service.fetchUnknownCards()
         ]);
-
-        if (!allCardsRes.ok || !knownCardsRes.ok || !unknownCardsRes.ok) {
-          throw new Error('Failed to fetch cards');
-        }
-
-        const allCards = await allCardsRes.json();
-        const known = await knownCardsRes.json();
-        const unknown = await unknownCardsRes.json();
         
         setCards(allCards);
         setKnownCards(known);
@@ -59,19 +60,12 @@ const App: React.FC = () => {
   // Add a new card
   const addCard = async (newCard: Card) => {
     try {
-      const response = await fetch(`${API_BASE_URL}/cards`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(newCard),
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to add card');
+      const success = await service.addCard(newCard);
+      if (success) {
+        setCards([newCard, ...cards]);
+      } else {
+        setError('Failed to add card. Please try again.');
       }
-
-      setCards([newCard, ...cards]);
     } catch (err) {
       console.error('Error adding card:', err);
       setError('Failed to add card. Please try again.');
@@ -91,23 +85,16 @@ const App: React.FC = () => {
   // Handle when a user knows a card
   const handleKnownCard = async (card: Card) => {
     try {
-      const response = await fetch(`${API_BASE_URL}/cards/known`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ cardId: card.id }),
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to mark card as known');
+      const success = await service.markCardAsKnown(card.id);
+      if (success) {
+        // Only add to known cards if it's not already there
+        if (!knownCards.some(knownCard => knownCard.id === card.id)) {
+          setKnownCards([...knownCards, card]);
+        }
+        setUnknownCards(unknownCards.filter(c => c.id !== card.id));
+      } else {
+        setError('Failed to mark card as known. Please try again.');
       }
-
-      // Only add to known cards if it's not already there
-      if (!knownCards.some(knownCard => knownCard.id === card.id)) {
-        setKnownCards([...knownCards, card]);
-      }
-      setUnknownCards(unknownCards.filter(c => c.id !== card.id));
     } catch (err) {
       console.error('Error marking card as known:', err);
       setError('Failed to mark card as known. Please try again.');
@@ -117,23 +104,16 @@ const App: React.FC = () => {
   // Handle when a user doesn't know a card
   const handleUnknownCard = async (card: Card) => {
     try {
-      const response = await fetch(`${API_BASE_URL}/cards/unknown`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ cardId: card.id }),
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to mark card as unknown');
+      const success = await service.markCardAsUnknown(card.id);
+      if (success) {
+        // Move the card to the end of the unknown list
+        setUnknownCards([
+          ...unknownCards.filter(c => c.id !== card.id),
+          card
+        ]);
+      } else {
+        setError('Failed to mark card as unknown. Please try again.');
       }
-
-      // Move the card to the end of the unknown list
-      setUnknownCards([
-        ...unknownCards.filter(c => c.id !== card.id),
-        card
-      ]);
     } catch (err) {
       console.error('Error marking card as unknown:', err);
       setError('Failed to mark card as unknown. Please try again.');
@@ -150,6 +130,21 @@ const App: React.FC = () => {
       <header className="header">
         <h1>Flash Cards</h1>
         <p>Learn new words effectively</p>
+        
+        {showBackendMessage && (
+          <div className="backend-notice">
+            <p>
+              This is a demo version running on GitHub Pages. 
+              Your cards are saved in your browser's localStorage.
+              <button 
+                className="dismiss-button" 
+                onClick={() => setShowBackendMessage(false)}
+              >
+                Dismiss
+              </button>
+            </p>
+          </div>
+        )}
       </header>
 
       {error && (

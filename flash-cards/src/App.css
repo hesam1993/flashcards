@@ -1,0 +1,30 @@
+.backend-notice {
+  background-color: #fffaed;
+  border: 1px solid #ffd56b;
+  border-radius: 4px;
+  padding: 10px 15px;
+  margin: 20px 0;
+  position: relative;
+}
+
+.backend-notice p {
+  margin: 0;
+  font-size: 0.9rem;
+  color: #5f4b00;
+}
+
+.dismiss-button {
+  position: absolute;
+  top: 5px;
+  right: 5px;
+  background: none;
+  border: none;
+  color: #5f4b00;
+  cursor: pointer;
+  font-size: 0.8rem;
+  text-decoration: underline;
+}
+
+.dismiss-button:hover {
+  color: #000;
+} 

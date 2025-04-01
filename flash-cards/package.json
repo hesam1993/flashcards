@@ -2,6 +2,7 @@
   "name": "flash-cards",
   "version": "1.0.0",
   "private": true,
+  "homepage": "https://hesam1993.github.io/flashcards",
   "scripts": {
     "start": "react-scripts start",
     "build": "react-scripts build",
@@ -9,7 +10,9 @@
     "eject": "react-scripts eject",
     "server": "node ../server/server.js",
     "setup-db": "node ../server/db/setup.js",
-    "dev": "concurrently \"npm run server\" \"npm run start\""
+    "dev": "concurrently \"npm run server\" \"npm run start\"",
+    "predeploy": "npm run build",
+    "deploy": "gh-pages -d build"
   },
   "keywords": [],
   "author": "",
@@ -29,7 +32,8 @@
     "@types/node": "^22.13.14",
     "@types/react": "^19.0.12",
     "@types/react-dom": "^19.0.4",
-    "concurrently": "^9.1.2"
+    "concurrently": "^9.1.2",
+    "gh-pages": "^6.1.1"
   },
   "eslintConfig": {
     "extends": [
