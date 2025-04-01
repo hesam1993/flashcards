@@ -34,7 +34,7 @@ A web application for learning new words using flash cards. This application use
 
 1. Clone the repository:
    ```
-   git clone https://github.com/yourusername/flash-cards.git
+   git clone https://github.com/hesam1993/flash-cards.git
    cd flash-cards
    ```
 
